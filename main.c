@@ -76,10 +76,9 @@ void setup()
     {
     }
     lcd.clear();
+  	emitirSomInicioJogo();
     loop();
 }
-
-
 
 void exibirPontuacao() {
     lcd.setCursor(0, 1);
@@ -107,60 +106,158 @@ void verifica_resposta(bool resposta) {
     if (resposta == resposta_correta) {
       lcd.clear();
       lcd.print("Correta!");
-      digitalWrite(lv, HIGH); 
+      emitirSomAcerto();
+      digitalWrite(lv, HIGH);
+      emitirSomAcerto();
       delay(3000);
       digitalWrite(lv, LOW); 
       pontuacao++;
     } else {
       lcd.clear();
       lcd.print("Incorreta!");
+      emitirSomErro();
       digitalWrite(lred, HIGH); 
       delay(3000);
       digitalWrite(lred, LOW);
+      tentativas--;
     }
     delay(3000);
     exibirPontuacao();
     delay(5000);
   }
 }
+void emitirSomAcerto() {
+    int frequencia[] = {261, 329, 392, 523};  
+    int duracaoNota = 250; 
 
-
-void loop()
-{
-    if (perguntas < maxperguntasf)
-    {
-        if (!mostrandoPergunta)
-        {            
-            indiceAleatorio = random(10); 
-            lcd.clear();
-            lcd.setCursor(1, 0);
-            numQ++;
-            exibirQuestao();
-            delay(2000);
-            lcd.clear();
-            lcd.setCursor(1, 0);
-            lcd.print(pgtfacil[indiceAleatorio]);
-            for (int i = 0; i < 16; i++) {      
-                lcd.scrollDisplayLeft();
-                delay(300);
-            }
-            mostrandoPergunta = true;
-        }
-        
-        if (digitalRead(btsim) == LOW)
-        {
-            verifica_resposta(true); 
-            mostrandoPergunta = false;
-            perguntas++;
-        }
-
-        if (digitalRead(btnao) == LOW)
-        {
-            verifica_resposta(false); 
-            mostrandoPergunta = false;
-            perguntas++;
-        }
-
-        delay(100);
+    for (int i = 0; i < 4; i++) {
+        tone(buzzer, frequencia[i]);
+        delay(duracaoNota);
+        noTone(buzzer);
+        delay(50);
     }
 }
+void emitirSomErro() {
+    int frequencia[] = {200, 150, 100}; 
+    int duracaoNota = 100; 
+    for (int i = 0; i < 3; i++) {
+        tone(buzzer, frequencia[i]);
+        delay(duracaoNota);
+        noTone(buzzer);
+        delay(50);
+    }
+}
+
+void emitirSomInicioJogo() {
+    
+    int notas[] = {330, 299, 392, 543};
+    int duracaoNota = 150;    
+    for (int i = 0; i < 4; i++) {
+        tone(buzzer, notas[i], duracaoNota);
+        delay(duracaoNota);
+        noTone(buzzer);
+        delay(50);
+    }
+}
+
+void emitirSomGameOver() { 
+    int notas[] = {262, 196, 147, 131, 110};
+    int duracaoNota = 300;
+    for (int i = 0; i < 5; i++) {
+        tone(buzzer, notas[i], duracaoNota);
+        delay(duracaoNota); 
+        noTone(buzzer); 
+        delay(50); 
+    }
+}
+
+void emitirSomPularPergunta() {
+    
+    int frequencia = 400; 
+    int duracaoNota = 200; 
+
+    tone(buzzer, frequencia, duracaoNota);
+    delay(duracaoNota); 
+    noTone(buzzer); 
+}
+
+
+void pularPergunta() {
+    mostrandoPergunta = false;
+    perguntas++;
+}
+
+void loop() {
+    unsigned long tempoInicioPergunta = millis();
+    unsigned long tempoDecorrido = 0;
+
+    while (tentativas > 0) {
+        if (perguntas < maxperguntasf) {
+            if (!mostrandoPergunta) {
+                indiceAleatorio = random(10);
+                lcd.clear();
+                lcd.setCursor(1, 0);
+                numQ++;
+                exibirQuestao();
+                delay(2000);
+                lcd.clear();
+                lcd.setCursor(1, 0);
+                lcd.print(pgtfacil[indiceAleatorio]);
+                for (int i = 0; i < 16; i++) {
+                    lcd.scrollDisplayLeft();
+                    delay(300);
+                }
+                mostrandoPergunta = true;
+                tempoInicioPergunta = millis(); 
+                tempoDecorrido = 0;
+            }
+
+            if (digitalRead(btsim) == LOW) {
+                verifica_resposta(true);
+                mostrandoPergunta = false;
+                perguntas++;
+            }
+            if (digitalRead(btnao) == LOW) {
+                verifica_resposta(false);
+                mostrandoPergunta = false;
+                perguntas++;
+            } 
+          
+          	if (digitalRead(btpular) == LOW) {
+                emitirSomPularPergunta();
+              	pularPergunta();
+            }
+          
+            tempoDecorrido = millis() - tempoInicioPergunta;
+            if (tempoDecorrido >= 10000 && tempoDecorrido < 15000) { 
+                digitalWrite(lred, HIGH); 
+                delay(100); 
+                digitalWrite(lred, LOW); 
+                delay(100); 
+            }           
+            if (tempoDecorrido >= 15000) {
+                emitirSomPularPergunta();
+              	pularPergunta();
+            }
+            
+            delay(100);
+        }
+    }
+
+    if (tentativas == 0) {
+        emitirSomGameOver();
+        delay(3000);
+        lcd.clear();
+        lcd.setCursor(1, 0);
+        lcd.print("GAME OVER");
+
+        if (digitalRead(btca) == HIGH) {
+            emitirSomInicioJogo();
+            tentativas = 3;
+            numQ = 0;
+            pontuacao = 0;
+            loop();
+        }
+    }
+}
+
