@@ -16,11 +16,15 @@ int lred = 6;
 int maxperguntasf = 5;
 int perguntas = 0;
 int pontuacao = 0;
-int tentativas = 3;
+int tentativas = 1;
 int dificuldade = 0;
 int numQ = 0;
 bool mostrandoPergunta = false;
 int indiceAleatorio;
+int pulosUsados = 0;
+bool perguntaPulada = false;
+
+
 
 String pgtfacil[10] = {
     //pgts sobre cachorro
@@ -108,8 +112,12 @@ void exibirPontuacao() {
 }
 
 void exibirQuestao() {
-  	lcd.print("Questao:");
-  	lcd.print(numQ);
+    lcd.print("Questao: ");
+    if (!perguntaPulada) {
+        lcd.print(numQ);
+    } else {
+        lcd.print(numQ - 1);
+    }
 }
 
 void verifica_resposta(bool resposta) {
@@ -135,6 +143,11 @@ void verifica_resposta(bool resposta) {
       delay(3000);
       digitalWrite(lv, LOW); 
       pontuacao++;
+      if (!perguntaPulada) {
+            numQ++;
+      } 
+      perguntaPulada = false;
+      
     } else {
       lcd.clear();
       lcd.print("Incorreta!");
@@ -144,9 +157,9 @@ void verifica_resposta(bool resposta) {
       digitalWrite(lred, LOW);
       tentativas = 0;
     }
-    delay(3000);
+    delay(2000);
     exibirPontuacao();
-    delay(5000);
+    delay(3000);
   }
 }
 void emitirSomAcerto() {
@@ -198,7 +211,6 @@ void emitirSomPularPergunta() {
     
     int frequencia = 400; 
     int duracaoNota = 200; 
-
     tone(buzzer, frequencia, duracaoNota);
     delay(duracaoNota); 
     noTone(buzzer); 
@@ -217,9 +229,14 @@ void emitirSomCampeao(){
 
 
 void pularPergunta() {
-    mostrandoPergunta = false;
-    perguntas++;
+    if (pulosUsados < 3) {
+        emitirSomPularPergunta();
+        mostrandoPergunta = false;
+        perguntaPulada = true;
+        pulosUsados++;
+    }
 }
+
 
 void campeao(){
 	lcd.clear();
